@@ -1,0 +1,437 @@
+/*
+ 2002570045 이상찬
+ 컴퓨터그래픽스 Project1
+*/
+
+#include <GLUT/glut.h>
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
+
+#define WINDOW_WIDTH	320
+#define WINDOW_HEIGHT	240
+
+#define DEGINRAD 3.14/180
+
+#define MENU_SHAPE				0
+#define MENU_SHAPE_RECTANGEL	1
+#define MENU_SHAPE_OVAL			2
+
+#define MENU_COLOR			3
+#define MENU_COLOR_BLACK	4
+#define MENU_COLOR_RED		5
+#define	MENU_COLOR_GREEN	6
+#define MENU_COLOR_BLUE		7
+
+#define MENU_FILLTYPE			8
+#define MENU_FILLTYPE_FILLED	9
+#define MENU_FILLTYPE_EMPTY		10
+
+#define MENU_LINEWIDTH_1	11
+#define MENU_LINEWIDTH_2	12
+#define MENU_LINEWIDTH_3	13
+#define MENU_LINEWIDTH_4	14
+#define MENU_LINEWIDTH_5	15
+
+#define MENU_RESET	20
+
+struct DrawObject {
+	int iStartX;
+	int iStartY;
+	int iEndX;
+	int iEndY;
+	int iShape;
+	int iColor;
+	int iFillType;
+	int iLineWidth;
+}stObj[999];
+
+int iOrdX, iOrdY, iDragX, iDragY;
+int iWindowWidth, iWindowHeight;
+
+int iShapeCount;
+int iSelectedShape;
+int iSelectedColor;
+int iSelectedFillType;
+int iSelectedLineWidth;
+
+/*
+ 마우스 x,y좌표 초기화
+*/
+void setXYReset(void)
+{
+	iOrdX = -100;
+	iOrdY = -100;
+	iDragX = -100;
+	iDragY = -100;
+}
+
+/*
+ 컬러설정
+*/
+void setColor(int iColor)
+{
+	if (iColor == MENU_COLOR_BLACK) {
+		glColor3f (0.0, 0.0, 0.0);
+	}
+	else if (iColor == MENU_COLOR_RED) {
+		glColor3f (1.0, 0.0, 0.0);
+	}
+	else if (iColor == MENU_COLOR_GREEN) {
+		glColor3f (0.0, 1.0, 0.0);
+	}
+	else if (iColor == MENU_COLOR_BLUE) {
+		glColor3f (0.0, 0.0, 1.0);
+	}
+	
+}
+
+
+/*
+ 선굵기 설정
+*/
+void setLineWidth(int iLineWidth)
+{
+	glLineWidth((float)iLineWidth-10);
+}
+
+/*
+ 도형 데이터 초기화
+*/
+void initReset(void)
+{
+	iShapeCount = 0;
+}
+
+
+/*
+ 첫 실행시 초기화 함수
+*/
+void initDefault(void)
+{
+	iShapeCount        = 0;
+	iSelectedShape     = MENU_SHAPE_RECTANGEL;
+	iSelectedColor     = MENU_COLOR_BLACK;
+	iSelectedFillType  = MENU_FILLTYPE_FILLED;
+	iSelectedLineWidth = MENU_LINEWIDTH_1;
+	glColor3f (0.0, 0.0, 0.0);
+	
+	//stObj = (struct DrawObject *)malloc(sizeof(struct DrawObject));
+	stObj[iShapeCount].iStartX    = -100;
+	stObj[iShapeCount].iStartY    = -100;
+	stObj[iShapeCount].iEndX	  = -100;
+	stObj[iShapeCount].iEndY	  = -100;
+	stObj[iShapeCount].iShape     = iSelectedShape;
+	stObj[iShapeCount].iColor	  = iSelectedColor;
+	stObj[iShapeCount].iFillType  = iSelectedFillType;
+	stObj[iShapeCount].iLineWidth = iSelectedLineWidth;
+	
+	/*if (stObj != NULL) {
+		free(stObj);
+	}*/
+	
+}
+
+/*
+ 타원그리기
+*/
+void drawEllipse(const float start_x, const float start_y, const float end_x, const float end_y, int iFillType)
+{
+	float xr, yr;
+	int i;
+	xr = ( end_x - start_x ) / 2;
+	yr = ( end_y - start_y ) / 2;
+	
+	if (iFillType == MENU_FILLTYPE_FILLED) {
+		glBegin(GL_POLYGON);
+	}
+	else {
+		glBegin(GL_LINE_LOOP);
+	}
+	for (i=0; i<360; i++){
+		float degInRad=i*DEGINRAD;
+		glVertex2f(start_x+xr+cos(degInRad)*xr, start_y+yr+sin(degInRad)*yr);
+	}
+	glEnd();
+}
+
+/*
+ 사각형 그리기
+*/
+void drawQuad(const float start_x, const float start_y, const float end_x, const float end_y, int iFillType) 
+{
+	
+	if (iFillType == MENU_FILLTYPE_FILLED) {
+		glBegin(GL_POLYGON);
+	}
+	else {
+		glBegin(GL_LINE_LOOP);
+	}
+		glVertex2f (start_x,start_y);
+		glVertex2f (end_x,start_y);
+		glVertex2f (end_x,end_y);
+		glVertex2f (start_x,end_y);
+	glEnd();
+	
+}
+
+/*
+ 도형 그려질 안내선 그림
+*/
+void drawStriple(const float start_x, const float start_y, const float end_x, const float end_y)
+{
+	float xr, yr;
+	int i;
+	xr = ( end_x - start_x ) / 2;
+	yr = ( end_y - start_y ) / 2;
+	
+	glEnable(GL_LINE_STIPPLE);
+	glLineStipple(1,0xF0F0);
+	
+	if (iSelectedShape == MENU_SHAPE_OVAL) {
+		glBegin(GL_LINE_LOOP);
+		for (i=0; i<360; i++){
+			float degInRad=i*DEGINRAD;
+			glVertex2f(start_x+xr+cos(degInRad)*xr, start_y+yr+sin(degInRad)*yr);
+		}
+		glEnd();
+	}
+	
+	glBegin(GL_LINE_LOOP);
+		glVertex2f (start_x,start_y);
+		glVertex2f (end_x,start_y);
+		glVertex2f (end_x,end_y);
+		glVertex2f (start_x,end_y);
+	glEnd();
+	glDisable(GL_LINE_STIPPLE);
+	
+}
+
+void display(void)
+{
+	int iDrawNum;
+	glClear (GL_COLOR_BUFFER_BIT);
+	
+	for (iDrawNum = 0; iDrawNum < iShapeCount; iDrawNum++) {
+		//설정하고
+		setColor(stObj[iDrawNum].iColor);
+		setLineWidth(stObj[iDrawNum].iLineWidth);
+		
+		//그리고
+		if (stObj[iDrawNum].iShape == MENU_SHAPE_RECTANGEL) {
+			drawQuad((float)stObj[iDrawNum].iStartX,(float)stObj[iDrawNum].iStartY,(float)stObj[iDrawNum].iEndX,(float)stObj[iDrawNum].iEndY,stObj[iDrawNum].iFillType);
+		}
+		else {
+			drawEllipse((float)stObj[iDrawNum].iStartX,(float)stObj[iDrawNum].iStartY,(float)stObj[iDrawNum].iEndX,(float)stObj[iDrawNum].iEndY,stObj[iDrawNum].iFillType);
+		}
+		printf("(for)stObj[%d] : %d, %d, %d, %d \n",iDrawNum,stObj[iDrawNum].iStartX,stObj[iDrawNum].iStartY,stObj[iDrawNum].iEndX,stObj[iDrawNum].iEndY);
+	}
+	
+	glLineWidth(1.0);
+	glColor3f (0.0, 0.0, 0.0);
+	if ((iOrdX >= 0) && (iOrdY >= 0)) {
+		//점선으로 그리는 부분 추가
+		drawStriple((float)iOrdX,(float)iOrdY,(float)iDragX,(float)iDragY);
+		//drawEllipse(float(iOrdX),float(iOrdY),float(iDragX),float(iDragY));
+	}
+	
+	
+	glutSwapBuffers();
+	
+}
+
+/*
+ 메뉴 누르면 실행
+*/
+void menu_click(int id)
+{
+	switch(id)
+	{
+		
+		case MENU_COLOR_BLUE :
+			iSelectedColor = id;
+			break;
+		case MENU_COLOR_RED :
+			iSelectedColor = id;
+			break;
+		case MENU_COLOR_GREEN :
+			iSelectedColor = id;
+			break;
+		case MENU_COLOR_BLACK:
+			iSelectedColor = id;
+			break;
+		case MENU_RESET:
+			initReset();
+			glutPostRedisplay();
+			break;
+		case MENU_SHAPE_RECTANGEL :
+			iSelectedShape = id;
+			break;
+		case MENU_SHAPE_OVAL:
+			iSelectedShape = id;
+			break;
+		case MENU_FILLTYPE_FILLED:
+			iSelectedFillType = id;
+			break;
+		case MENU_FILLTYPE_EMPTY:
+			iSelectedFillType = id;
+			break;
+		case MENU_LINEWIDTH_1:
+			iSelectedLineWidth = id;
+			break;
+		case MENU_LINEWIDTH_2:
+			iSelectedLineWidth = id;
+			break;
+		case MENU_LINEWIDTH_3:
+			iSelectedLineWidth = id;
+			break;
+		case MENU_LINEWIDTH_4:
+			iSelectedLineWidth = id;
+			break;
+		case MENU_LINEWIDTH_5:
+			iSelectedLineWidth = id;
+			break;
+
+	}
+}
+
+/*
+ 메뉴지정
+*/
+void initMenu(void)
+{
+	int	iMenuTop;
+	int	iMenuShape;
+	int	iMenuColor;
+	int	iMenuFilled;
+	int iMenuLineWidth;
+	int iMenuReset;
+	
+	iMenuLineWidth = glutCreateMenu(menu_click);
+	glutAddMenuEntry("1", MENU_LINEWIDTH_1);
+	glutAddMenuEntry("2", MENU_LINEWIDTH_2);
+	glutAddMenuEntry("3", MENU_LINEWIDTH_3);
+	glutAddMenuEntry("4", MENU_LINEWIDTH_4);
+	glutAddMenuEntry("5", MENU_LINEWIDTH_5);
+	
+	iMenuFilled = glutCreateMenu(menu_click);
+	glutAddMenuEntry("Filled", MENU_FILLTYPE_FILLED);
+	glutAddMenuEntry("Empty", MENU_FILLTYPE_EMPTY);
+	
+	iMenuColor = glutCreateMenu(menu_click);
+	glutAddMenuEntry("Black", MENU_COLOR_BLACK);
+	glutAddMenuEntry("Red", MENU_COLOR_RED);
+	glutAddMenuEntry("Green", MENU_COLOR_GREEN);
+	glutAddMenuEntry("Blue", MENU_COLOR_BLUE);
+	
+	iMenuShape = glutCreateMenu(menu_click);
+	glutAddMenuEntry("Rectangle", MENU_SHAPE_RECTANGEL);
+	glutAddMenuEntry("Oval", MENU_SHAPE_OVAL);
+	
+	
+	iMenuTop = glutCreateMenu(menu_click);
+	glutAddSubMenu("Shape", iMenuShape);
+	glutAddSubMenu("Color", iMenuColor);
+	glutAddSubMenu("Fill type", iMenuFilled);
+	glutAddSubMenu("Line width", iMenuLineWidth);
+	glutAddMenuEntry("Reset", MENU_RESET);
+	
+	glutAttachMenu(GLUT_RIGHT_BUTTON);
+}
+
+void mouse(int button, int state, int x, int y)
+{
+	if (button == GLUT_LEFT_BUTTON ) {
+		if (state == GLUT_UP) 
+		{
+		
+			if ((iOrdX != x) || (iOrdY != y)) 
+			{
+				stObj[iShapeCount].iStartX    = iOrdX;
+				stObj[iShapeCount].iStartY    = iOrdY;
+				stObj[iShapeCount].iEndX	  = x;
+				stObj[iShapeCount].iEndY	  = iWindowHeight - y;
+			
+				stObj[iShapeCount].iShape     = iSelectedShape;
+				stObj[iShapeCount].iColor	  = iSelectedColor;
+				stObj[iShapeCount].iFillType  = iSelectedFillType;
+				stObj[iShapeCount].iLineWidth = iSelectedLineWidth;
+			
+				printf("stObj[%d] : %d, %d, %d, %d \n",iShapeCount,stObj[iShapeCount].iStartX,stObj[iShapeCount].iStartY,stObj[iShapeCount].iEndX,stObj[iShapeCount].iEndY);
+				iShapeCount++;
+				if (iShapeCount > 999) {
+					iShapeCount = 0;
+				}
+				setXYReset();
+				glutPostRedisplay();
+			}
+		}
+		else if (state == GLUT_DOWN)
+		{
+			iOrdX = x; iOrdY = iWindowHeight - y;
+		}
+		
+	}
+	
+}
+
+/*
+ 드래그 이동
+*/
+void motion(int x, int y)
+{
+	iDragX = x; iDragY = iWindowHeight - y;
+	glutPostRedisplay();
+}
+
+/*
+ 마우스 이동
+*/
+void passivemotion(int x, int y)
+{
+	
+}
+
+void reshape(int width, int height)
+{
+	iWindowWidth = width;
+	iWindowHeight = height;
+	
+	glViewport(0,0,iWindowWidth, iWindowHeight);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0, (float)iWindowWidth, 0.0 , (float)iWindowHeight, -1.0, 1.0);
+}
+
+int main(int argc, char** argv)
+{
+	iWindowWidth = WINDOW_WIDTH;
+	iWindowHeight = WINDOW_HEIGHT;
+	
+	glutInit(&argc, argv);
+	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGBA);
+	glutInitWindowSize (iWindowWidth, iWindowHeight); 
+	glutInitWindowPosition (100, 100);
+	
+	glutCreateWindow ("cg_prj1_2002570045");
+	
+	glClearColor (1.0, 1.0, 1.0, 1.0);
+
+	glViewport(0,0,iWindowWidth, iWindowHeight);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0.0, (float)iWindowWidth, 0.0, (float)iWindowHeight, -1.0, 1.0);
+	
+	initDefault();
+	initMenu();
+
+	glutDisplayFunc(display);
+	glutReshapeFunc(reshape);
+	glutMotionFunc(motion);
+	glutPassiveMotionFunc(passivemotion);
+	glutMouseFunc(mouse);
+	
+	glutMainLoop();
+	return 0;
+	
+}
